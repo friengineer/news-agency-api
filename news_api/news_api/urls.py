@@ -15,7 +15,13 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from stories.views import Login, Logout, CreateStory, ListStories, DeleteStory
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/login/', Login),
+    path('api/logout/', Logout),
+    path('api/poststory/', CreateStory),
+    path('api/getstories/', ListStories),
+    path('api/deletestory/', DeleteStory),
 ]
