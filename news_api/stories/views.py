@@ -2,6 +2,8 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login, logout
+from stories.models import Story
+import json, datetime
 
 @csrf_exempt
 def Login(request):
@@ -33,13 +35,31 @@ def CreateStory(request):
         return HttpResponse('Unable to post story because user is not logged in.', content_type='text/plain', status=503)
 
     try:
-        response = HttpResponse('Your story has been posted.', content_type='text/plain', status=201)
+        data = json.loads(request.body.decode('UTF-8'))
+
+        # story = Story(headline=data['headline'],
+        #               category=data['category'],
+        #               region=data['region'],
+        #               author=request.user,
+        #               publication_date=datetime.datetime.now(),
+        #               details=data['details'])
+
+        Story.objects.create(headline=data['headline'],
+                             category=data['category'],
+                             region=data['region'],
+                             author=request.user,
+                             publication_date=datetime.datetime.now(),
+                             details=data['details'])
+
+        response = HttpResponse(content=None, content_type='text/plain', status=201)
     except:
         response = HttpResponse('An error occurred and your story has not been posted.', content_type='text/plain', status=503)
 
     return response
 
 def ListStories(request):
+    data = json.loads(request.body.decode('UTF-8'))
+
     return HttpResponse('List stories not implemented')
 
 @csrf_exempt
@@ -48,7 +68,11 @@ def DeleteStory(request):
         return HttpResponse('Unable to delete story because user is not logged in.', content_type='text/plain', status=503)
 
     try:
-        response = HttpResponse('The story has been deleted.', content_type='text/plain', status=201)
+        data = json.loads(request.body.decode('UTF-8'))
+        story = Story.objects.get(pk=data['story_key'])
+        story.delete()
+
+        response = HttpResponse(content=None, content_type='text/plain', status=201)
     except:
         response = HttpResponse('An error occurred and the story has not been deleted.', content_type='text/plain', status=503)
 
