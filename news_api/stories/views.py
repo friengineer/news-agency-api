@@ -2,8 +2,10 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login, logout
+from django.utils import timezone
 from stories.models import Story
-import json, datetime
+import json
+from datetime import datetime
 
 @csrf_exempt
 def Login(request):
@@ -37,18 +39,11 @@ def CreateStory(request):
     try:
         data = json.loads(request.body.decode('UTF-8'))
 
-        # story = Story(headline=data['headline'],
-        #               category=data['category'],
-        #               region=data['region'],
-        #               author=request.user,
-        #               publication_date=datetime.datetime.now(),
-        #               details=data['details'])
-
         Story.objects.create(headline=data['headline'],
                              category=data['category'],
                              region=data['region'],
                              author=request.user,
-                             publication_date=datetime.datetime.now(),
+                             publication_date=timezone.now(),
                              details=data['details'])
 
         response = HttpResponse(content=None, content_type='text/plain', status=201)
@@ -60,6 +55,10 @@ def CreateStory(request):
 def ListStories(request):
     data = json.loads(request.body.decode('UTF-8'))
 
+    results = Story.objects.filter(category=data['story_cat'],
+                                   region=data['story_region'],
+                                   publication_date>=datetime.strptime(data['story_date'], '%d/%m/%Y'))
+    print(results)
     return HttpResponse('List stories not implemented')
 
 @csrf_exempt
