@@ -19,4 +19,4 @@ class Story(models.Model):
     details = models.TextField(max_length=512)
 
     def __str__(self):
-        return u'%s %s %s %s' % (self.headline, self.category, self.region, self.publication_date)
+        return u'Headline: %s' % (self.headline)

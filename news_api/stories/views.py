@@ -1,6 +1,7 @@
 from django.shortcuts import render
-from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
+from django.http import HttpResponse, HttpResponseServerError, HttpResponseNotFound, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -8,6 +9,7 @@ from stories.models import Story
 import json
 from datetime import datetime
 
+@require_POST
 @csrf_exempt
 def Login(request):
     username = request.POST['username']
@@ -21,6 +23,7 @@ def Login(request):
     else:
         return HttpResponse('Failed login. The credentials supplied are incorrect.', content_type='text/plain', status=401)
 
+@require_POST
 @csrf_exempt
 def Logout(request):
     try:
@@ -28,10 +31,11 @@ def Logout(request):
 
         response = HttpResponse('You have successfully logged out, goodbye.', content_type='text/plain')
     except:
-        response = HttpResponse('Logout failed and you have not been logged out.', content_type='text/plain', status=503)
+        response = HttpResponseServerError('Logout failed and you have not been logged out.', content_type='text/plain')
 
     return response
 
+@require_POST
 @csrf_exempt
 def CreateStory(request):
     if not request.user.is_authenticated:
@@ -53,6 +57,7 @@ def CreateStory(request):
 
     return response
 
+@require_GET
 def ListStories(request):
     data = json.loads(request.body.decode('UTF-8'))
 
@@ -65,11 +70,12 @@ def ListStories(request):
         results = results.filter(region=data['story_region'])
 
     if data['story_date'] != '*':
-        results = results.filter(publication_date__gte=datetime.strptime(data['story_date'], '%d/%m/%Y'))
+        date = datetime.strptime(data['story_date'], '%d/%m/%Y')
+        results = results.filter(publication_date__gte=timezone.make_aware(date, is_dst=False))
 
     if not results.exists():
-        return HttpResponseNotFound('No stories have been found that match the supplied criteria.', content_type='text/plain')
-    
+        return HttpResponseNotFound('No stories found that match the supplied criteria.', content_type='text/plain')
+
     results = results.values()
     jsonResults = []
 
@@ -91,6 +97,7 @@ def ListStories(request):
 
     return JsonResponse(payload)
 
+@require_POST
 @csrf_exempt
 def DeleteStory(request):
     if not request.user.is_authenticated:
