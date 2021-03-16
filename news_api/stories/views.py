@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from stories.models import Story
 import json
@@ -43,17 +44,21 @@ def CreateStory(request):
 
     try:
         data = json.loads(request.body.decode('UTF-8'))
+        story = Story(headline=data['headline'],
+                      category=data['category'],
+                      region=data['region'],
+                      author=request.user,
+                      publication_date=timezone.now(),
+                      details=data['details'])
 
-        Story.objects.create(headline=data['headline'],
-                             category=data['category'],
-                             region=data['region'],
-                             author=request.user,
-                             publication_date=timezone.now(),
-                             details=data['details'])
+        story.full_clean()
+        story.save()
 
         response = HttpResponse(content_type='text/plain', status=201)
+    except ValidationError:
+        response = HttpResponse('Unable to post story as either the headline field contains more than 64 characters or the details field contains more than 512 characters.', content_type='text/plain', status=503)
     except:
-        response = HttpResponse('An error occurred and your story has not been posted.', content_type='text/plain', status=503)
+        response = HttpResponse('An unknown error occurred and your story has not been posted.', content_type='text/plain', status=503)
 
     return response
 
