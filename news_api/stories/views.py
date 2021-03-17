@@ -10,20 +10,27 @@ from stories.models import Story
 import json
 from datetime import datetime
 
+# Log the user in and associate them with the session
 @require_POST
 @csrf_exempt
 def Login(request):
-    username = request.POST['username']
-    password = request.POST['password']
-    user = authenticate(request, username=username, password=password)
+    try:
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password)
 
-    if user is not None:
-        login(request, user)
+        if user is not None:
+            login(request, user)
 
-        return HttpResponse('You are logged in, welcome back!', content_type='text/plain')
-    else:
-        return HttpResponse('Failed login. The credentials supplied are incorrect.', content_type='text/plain', status=401)
+            response = HttpResponse('You are logged in, welcome back!', content_type='text/plain')
+        else:
+            response = HttpResponse('Login failed. The credentials supplied are incorrect.', content_type='text/plain', status=401)
+    except:
+        response = HttpResponseServerError('An unkown error occurred and you were not logged in. Please ensure your request conforms to the specification.', content_type='text/plain')
 
+    return response
+
+# Log the user out of their session
 @require_POST
 @csrf_exempt
 def Logout(request):
@@ -32,13 +39,15 @@ def Logout(request):
 
         response = HttpResponse('You have successfully logged out, goodbye.', content_type='text/plain')
     except:
-        response = HttpResponseServerError('Logout failed and you have not been logged out.', content_type='text/plain')
+        response = HttpResponseServerError('Logout failed. An unknown error occurred, please ensure your request conforms to the specification.', content_type='text/plain')
 
     return response
 
+# Create a news story in the database using the request's information
 @require_POST
 @csrf_exempt
 def CreateStory(request):
+    # Return error respose if user is not logged in
     if not request.user.is_authenticated:
         return HttpResponse('Unable to post story because user is not logged in.', content_type='text/plain', status=503)
 
@@ -51,10 +60,13 @@ def CreateStory(request):
                       publication_date=timezone.now(),
                       details=data['details'])
 
+        # Validate input before saving entry to database
         story.full_clean()
         story.save()
 
         response = HttpResponse(content_type='text/plain', status=201)
+
+    # Handle errors thrown during validation, find the cause and inform the client
     except ValidationError as e:
         message = 'Unable to post story because of the following reasons:'
 
@@ -76,6 +88,7 @@ def CreateStory(request):
 
     return response
 
+# Return queried stories to client
 @require_GET
 def ListStories(request):
     data = json.loads(request.body.decode('UTF-8'))
@@ -92,12 +105,14 @@ def ListStories(request):
         date = datetime.strptime(data['story_date'], '%d/%m/%Y')
         results = results.filter(publication_date__gte=timezone.make_aware(date, is_dst=False))
 
+    # Return not found error if no stories match the supplied criteria
     if not results.exists():
         return HttpResponseNotFound('No stories found that match the supplied criteria.', content_type='text/plain')
 
     results = results.values()
     jsonResults = []
 
+    # Create JSON array of stories in result
     for story in results:
         author = User.objects.get(pk=story['author_id'])
         name = author.first_name + ' ' + author.last_name
@@ -116,9 +131,11 @@ def ListStories(request):
 
     return JsonResponse(payload)
 
+# Delete the specified story
 @require_POST
 @csrf_exempt
 def DeleteStory(request):
+    # Return error respose if user is not logged in
     if not request.user.is_authenticated:
         return HttpResponse('Unable to delete story because user is not logged in.', content_type='text/plain', status=503)
 
@@ -129,6 +146,6 @@ def DeleteStory(request):
 
         response = HttpResponse(content_type='text/plain', status=201)
     except:
-        response = HttpResponse('An error occurred and the story has not been deleted.', content_type='text/plain', status=503)
+        response = HttpResponse('An error occurred and the story has not been deleted. The story may not exist or the request might have incorrect parameters.', content_type='text/plain', status=503)
 
     return response

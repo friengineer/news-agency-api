@@ -19,5 +19,6 @@ class Story(models.Model):
     publication_date = models.DateTimeField('Publication Date')
     details = models.TextField(max_length=512, validators=[MaxLengthValidator(512)])
 
+    # Return string representation
     def __str__(self):
         return u'Headline: %s' % (self.headline)
