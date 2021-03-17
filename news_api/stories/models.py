@@ -12,7 +12,7 @@ class Story(models.Model):
                    ('eu', 'European'),
                    ('w', 'World'))
 
-    headline = models.CharField(max_length=64, validators=[MaxLengthValidator(64)])
+    headline = models.CharField(max_length=64)
     category = models.CharField(max_length=6, choices=CategoryTypes)
     region = models.CharField(max_length=2, choices=RegionTypes)
     author = models.ForeignKey(User, on_delete=models.CASCADE)

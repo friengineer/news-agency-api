@@ -55,8 +55,22 @@ def CreateStory(request):
         story.save()
 
         response = HttpResponse(content_type='text/plain', status=201)
-    except ValidationError:
-        response = HttpResponse('Unable to post story as either the headline field contains more than 64 characters or the details field contains more than 512 characters.', content_type='text/plain', status=503)
+    except ValidationError as e:
+        message = 'Unable to post story because of the following reasons:'
+
+        if 'headline' in e.message_dict:
+            message += '\nHeadline: ' + e.message_dict['headline'][0]
+
+        if 'category' in e.message_dict:
+            message += '\nCategory: ' + e.message_dict['category'][0]
+
+        if 'region' in e.message_dict:
+            message += '\nRegion: ' + e.message_dict['region'][0]
+
+        if 'details' in e.message_dict:
+            message += '\nDetails: ' + e.message_dict['details'][0]
+
+        response = HttpResponse(message, content_type='text/plain', status=503)
     except:
         response = HttpResponse('An unknown error occurred and your story has not been posted.', content_type='text/plain', status=503)
 
