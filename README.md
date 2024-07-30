@@ -38,9 +38,11 @@ Accepts HTTP POST requests containing a JSON payload with the following fields: 
 `/CreateStory`
 
 ### List Stories
-List all stories.
+Return stories that, if supplied, match the filters.
 
-Accepts HTTP GET requests containing a JSON payload with the following fields: `story_cat`, `story_region`, `story_date`. `story_date` must be supplied in the format dd/mm/yyyy.
+Accepts HTTP GET requests containing a JSON payload with the following fields: `story_cat`, `story_region`, `story_date`.
+
+If no filter needs applying for a field, assign it the value `'*'`. `story_date` must be supplied in the format `'dd/mm/yyyy'`.
 
 Returns a HTTP response containing a JSON payload with the field `stories` containing a JSON array of stories.
 
